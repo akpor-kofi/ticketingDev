@@ -1,0 +1,30 @@
+import { Request, Response } from "express";
+import { body } from "express-validator";
+import { NotFoundError, NotAuthorizedError } from "@kofitickets/common";
+import { Ticket } from "../models/ticket-model";
+
+export const bodyValidation = [
+  body("title").not().isEmpty().withMessage("Title is required"),
+  body("price").isFloat({ gt: 0 }).withMessage("price must be greater than 0"),
+];
+
+export const updateTicket = async (req: Request, res: Response) => {
+  const ticket = await Ticket.findById(req.params.id);
+
+  if (!ticket) {
+    throw new NotFoundError();
+  }
+
+  if (ticket.userId !== req.currentUser!.id) {
+    throw new NotAuthorizedError();
+  }
+
+  ticket.set({
+    title: req.body.title,
+    price: req.body.price,
+  });
+
+  await ticket.save();
+
+  res.send(ticket);
+};
